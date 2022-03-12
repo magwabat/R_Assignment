@@ -1,0 +1,199 @@
+---
+title: "R_Assignment"
+author: "Fazhir"
+date: "3/11/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+#Installing and loading packages
+```{r}
+install.packages("tidyverse")
+library(tidyverse)
+library(dplyr)
+```
+
+#Loading the files
+```{r}
+fang <- read.table("https://raw.githubusercontent.com/EEOB-BioData/BCB546-Spring2022/main/assignments/UNIX_Assignment/fang_et_al_genotypes.txt", header = TRUE, sep = "\t")
+SNPs <- read.table("https://raw.githubusercontent.com/EEOB-BioData/BCB546-Spring2022/main/assignments/UNIX_Assignment/snp_position.txt", header = TRUE, sep = "\t")
+```
+#Studying the file structure
+```{r}
+summary(select(SNPs, `SNP_ID`)) # this showed that the file has 983 SNP_IDs
+unique(SNPs$Chromosome) #this showed that the chromosomes are numbered 1-10 with SNPs not mapped to any chromosome while some apperaring on more tan one chromosome.
+dim(genotypes) #gives the dimensions of the file
+dim(fang)
+dim(SNPs)
+#after knowing that the files are not too big, i viewed them
+view(fang)
+view(SNPs)
+class(SNPs)
+class(fang)
+```
+#Data processing (Maize)
+```{r}
+maize_fang <- filter(fang, Group %in% c('ZMMIL', 'ZMMLR', 'ZMMMR'))
+SNP_nocdv <- SNPs[-2] #eliminated the second column from the original SNP data file
+view(SNP_nocdv)
+genotype_maize <- maize_fang[-(1:3)] #creates a genotype file for maize without the first 3 columns
+#transposed the maize file by
+trans_maize <- t(maize_fang) %>% as.data.frame() %>% rownames_to_column(., var = "SNP_ID")
+view(trans_maize)
+transposed_maize <- trans_maize[4:nrow(trans_maize),]
+view(transposed_maize)
+create_SNP_col <- select(SNP_nocdv, c(1,2,3))
+view(create_SNP_col)
+merged_Maize <- merge(create_SNP_col, transposed_maize, by = "SNP_ID")
+view(merged_Maize)
+```
+#Created a folder for the maize files to be created
+```{r}
+dir.create('./Maize_info')
+```
+#Creating the 10 files with increasing order
+```{r}
+chr_maize <- filter(merged_Maize, Chromosome != "multiple" & Chromosome != "unknown")
+for (i in 1:length(unique(chr_maize$Chromosome))) {
+  chrom <- chr_maize %>% filter(Chromosome == i) %>% arrange(Position)
+  write.table (chrom, file = paste("./Maize_info/Maize_A", i, sep = "_"), quote = FALSE)
+}
+```
+#Creating the 10 files with a decreasing order
+```{r}
+Decr_Maize <- as_tibble(lapply(merged_Maize, gsub, pattern ="?", replacement ="-", fixed = TRUE))
+Chrom_Decr_Maize <- filter(Decr_Maize, Chromosome != "multiple" & Chromosome != "unknown")
+for (i in 1:length(unique(Chrom_Decr_Maize$Chromosome))) {
+  chrm_decreasing <- Chrom_Decr_Maize %>% filter(Chromosome == i) %>% arrange(desc(Position))
+  write.table(chrm_decreasing, file = paste("./Maize_info/Maize_B", i, sep = "_"), quote = FALSE)
+}
+```
+#Data processing (Teosinte)
+```{r}
+Teosinte_fang <- filter(fang, Group %in% c('ZMPBA', 'ZMPIL', 'ZMPJA'))
+genotype_teosinte <- Teosinte_fang[-(1:3)] #creates a genotype file for maize without the first 3 columns
+#transposed the teosinte file by
+trans_teosinte <- t(Teosinte_fang) %>% as.data.frame() %>% rownames_to_column(., var = "SNP_ID")
+view(trans_teosinte)
+transposed_teosinte <- trans_teosinte[4:nrow(trans_teosinte),]
+view(transposed_teosinte)
+merged_teosinte <- merge(create_SNP_col, transposed_teosinte, by = "SNP_ID", all.x = TRUE, all.y = TRUE)
+view(merged_teosinte)
+```
+#Created a folder for the Teosinte files to be made
+```{r}
+dir.create('./Teosinte_info')
+```
+#Creating the 10 files with increasing order
+```{r}
+chr_teo <- filter(merged_teosinte, Chromosome != "multiple" & Chromosome != "unknown")
+for (i in 1:length(unique(chr_teo$Chromosome))) {
+  Tchrom <- chr_teo %>% filter(Chromosome == i) %>% arrange(Position)
+  write.table (Tchrom, file = paste("./Teosinte_info/Teosinte_A", i, sep = "_"), quote = FALSE)
+}
+```
+#Creating the 10 files with a decreasing order of position
+```{r}
+Decr_Teosinte <- as_tibble(lapply(merged_teosinte, gsub, pattern ="?", replacement ="-", fixed = TRUE))
+Tchrom <- filter(Decr_Teosinte, Chromosome != "multiple" & Chromosome != "unknown")
+for (i in 1:length(unique(Tchrom$Chromosome))) {
+  Tchrm_decreasing <- Tchrom %>% filter(Chromosome == i) %>% arrange(desc(Position))
+  write.table(Tchrm_decreasing, file = paste("./Teosinte_info/Teosinte_B", i, sep = "_"), quote = FALSE)
+}
+```
+#Data visualization
+##Preparing files for visualization
+```{r}
+visual_fang <- fang %>% select(-JG_OTU, -Group) %>% column_to_rownames(., var = "Sample_ID") %>% t() %>% as.data.frame() %>% rownames_to_column(., var = "SNP_ID")
+Genotypes_SNP <- merge(create_SNP_col, visual_fang) %>% filter(., !Chromosome %in% c("unknown", "multiple"))
+view(Genotypes_SNP)
+```
+#Visualizing SNP distribution on each chromosome
+```{r}
+SNP_Distribution <- 
+  ggplot(Genotypes_SNP, aes(x=as.double(Chromosome), #x=as.double(Chromosome) considers Chr as a number
+                               fill = as.factor(as.double(Chromosome)))) +  # for getting chrom in the right order in the legend   
+  geom_bar() +
+  scale_x_continuous(breaks = 1:10) + # bcs x=as.double(Chromosome), breaks by default don't match chrom number
+  theme_bw() + 
+  ggtitle("Distribution of SNPs per chromosome") +
+  labs(x = "Chromosome", y = "Total SNPs", fill = "Chromosome") #fill = "Chromosome" only replace legend's tittle
+```
+#Visualizing SNP diversity on each chromosome
+```{r}
+SNP_Heterozygosity <- 
+  ggplot(Genotypes_SNP, aes(x= as.numeric(Position))) + 
+  geom_density(aes(fill = as.factor(as.double(Chromosome)))) +  #same as the previous plot 
+  facet_wrap(~ as.factor(as.double(Chromosome)), nrow = 2, ncol = 5) + 
+  ggtitle("Diversity of SNPs per chromosome") +
+  theme(axis.text.x=element_text(angle = 90)) +                 #change orientation of x axis
+  labs(x = "Position", y = "Density", fill = "Chromosome")
+```
+#preparing the SNP visualization PDF
+```{r}
+pdf("SNP_Visualisation.pdf")
+print(SNP_Distribution)
+print(SNP_Heterozygosity)
+dev.off()
+```
+#Visualizing for missing SNP data
+##Tidying up the dataset
+```{r}
+tidy_fang <- fang %>% select(-JG_OTU) %>% pivot_longer( -Sample_ID: -Group, names_to = "SNP_ID", values_to = "Sequence")
+tidy_fang_col <- tidy_fang %>% mutate(new_sequence = ifelse(Sequence %in% c("A/A", "T/T", "C/C", "G/G"), "Homozygous", ifelse(Sequence == "?/?", "Missing", "Heterozygous")))
+```
+#Missing SNPs and Heterozygosity
+```{r}
+All_Fang <-  ggplot(tidy_fang_col, aes(x = Sample_ID, fill = new_sequence)) +
+  ggtitle("Heterozygosity Plot") +
+  geom_bar(position = "fill") + theme_bw() + labs(x = "Sample ID", y = "Proportion")
+#Grouping of heterozygosity
+Groups <- ggplot(tidy_fang_col, aes(x = Group , fill = new_sequence)) + geom_bar(position = "fill") + 
+  ggtitle("Heterozygosity by Groups ") +
+  theme_bw() + theme(axis.text.x = element_text(angle = 90))+ labs(y = "Proportion")
+```
+#Preparing the Missing SNP and heterozygosity PDF
+```{r}
+pdf("Missing_data_and_Heterozygosity.pdf")
+print(All_Fang)
+print(Groups)
+dev.off()
+```
+#Personal trial (Please first ignore this. It is still under process)
+##Preparing files
+```{r}
+My_maize <- maize_fang %>% select(-JG_OTU, -Group) %>% column_to_rownames(., var = "Sample_ID") %>% t() %>% as.data.frame() %>% rownames_to_column(., var = "SNP_ID")
+view(My_maize)
+maize_and_SNP <- merge(create_SNP_col, My_maize) %>% filter(., !Chromosome %in% c("unknown", "multiple"))
+view(maize_and_SNP)
+Me_on_it <- ggplot(filter(maize_and_SNP, Sequence != "A/A") , aes(x = Sample_ID, fill = Sequence)) + 
+  geom_bar(position = "fill") + theme_bw() + labs(x = "Sample_ID", y = "Proportion")
+```
+#Visualization on a PDF
+```{r}
+pdf("Me_On_it.pdf")
+print(Me_on_it)
+dev.off()
+```
