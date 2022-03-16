@@ -1,0 +1,61 @@
+---
+title: "b"
+author: "Fazhir"
+date: "3/14/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#Loading packages
+Library(Package.name) allows me to use an already installed package or one that comes along with another installed package e.g ggplot with installed Tidyverse. I included package installation for those that you hadn't installed. 
+```{r}
+#install.packages("tidyverse")
+#install.packages("tidyr")
+#install.packages("dplyr") 
+#install.packages("stringr")
+```
+#Inspecting the files
+I would love it better if you had helped me and made the inspection codes into a single snippet, so I just run it minus editing a thing. Note that the `head` and `tail` functions do not work. However, If I have already opened them from the environment, i would have gotten a feel of the headers and scrolling down would give me the tail as well. Also the `dim()` can summarize the role of the `ncol` and `nrow`.
+```{r}
+#object.size(fang_et_al_genotypes)  # file size.
+#dim(fang_et_al_genotypes) # dimensions by row and column.
+#str(fang_et_al_genotypes) # structure which includes the name, type and preview of data in each column.
+#sapply(fang_et_al_genotypes, class) # class of each column of data.
+```
+#Transposition
+The t() is a good command but works better if you create an intermediate file to incorporate the title of interest and eliminate one you do not want. In this case, the file will have the first column as SNP_ID such that it doesn't consider the first column as if it were row.names. I tried running this as part of your chunk and it made it really awesome. But you will have to do it for Teosinte as well.
+```{r}
+#intermediate_maize <- maize[-(1:3)]
+#trans_maize <- t(intermediate_maize) %>% as.data.frame() %>% rownames_to_column(., var = "SNP_ID")
+#view(trans_maize)
+```
+#Visualization
+Truth said I ran your snippets multiple times, tried to modify a few to get the error out but it persisted. However, what I thought of finally was the way you could modify the `Maize_Numeric_Chrom` file that you read. This is how I prepared it
+```{r}
+##Preparing files for visualization
+```{r}
+Maize_Numeric_Chrom <- fang_et_al_genotypes %>% select(-JG_OTU, -Group) %>% column_to_rownames(., var = "Sample_ID") %>% t() %>% as.data.frame() %>% rownames_to_column(., var = "SNP_ID")
+Genotypes_with_SNP <- merge(SNP_Chromosome_Positions, Maize_Numeric_Chrom) %>% filter(., !Chromosome %in% c("unknown", "multiple"))
+view(Genotypes_with_SNP)
+```
+#Visualizing Density of SNPs
+I then used ggplot on this preprared file using `geom_density`
+```{r}
+Maize_Density_Final <- 
+  ggplot(Genotypes_with_SNP, aes(x= as.numeric(Position))) + 
+  geom_density(aes(fill = as.factor(as.double(Chromosome)))) +  #same as the previous plot 
+  facet_wrap(~ as.factor(as.double(Chromosome)), nrow = 2, ncol = 5) + 
+  ggtitle("Diversity of SNPs per chromosome") +
+  theme(axis.text.x=element_text(angle = 90)) +                 #change orientation of x axis
+  labs(x = "Position", y = "Density", fill = "Chromosome")
+```
+#Plotting
+I then plotted this in a PDF to see how it looked like. I havent done the same for Teosinte but I hope it works as well if the same format is followed.
+```{r}
+pdf("SNP_Density.pdf")
+print(Maize_Density_Final)
+dev.off()
+```
+#Wish you the best of luck####

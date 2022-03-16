@@ -1,0 +1,380 @@
+---
+title: "Ceren_MD_Reviewed_Fazhir_22"
+author: "Fazhir"
+date: "3/14/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+---
+title: "R-Assignment-BCB546-Spring2022-Ceren_Ordas"
+author: "Ceren Ordas"
+date: '2022-03-11'
+output: html_document
+---
+
+1- Create a repository on GitHub named "R_Assignment_BCB546_Spring_2022_Ceren_Ordas and then load it into R Studio.
+
+To do that:
+
+1. Clone the repository.
+2. Click File, then New Project, then Version Control, Git on R Studio.
+3. Paste the copied repository URL and write the directory name and then create the project.
+4. Install the R packages that we need  by using `install.packages("package")` and load the ones you don't have into the library.
+
+```{r}
+install.packages("tidyverse")
+install.packages("tidyr")
+install.packages("dplyr") 
+install.packages("stringr")
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+```
+
+- PART I: Data Inspection:
+- Open the files `fang_et_al_genotypes` and `snp_position.txt` by going to the BCB546-Spring2022 GitHub repository by using their links and transform these files into a data frame.
+
+```{r}
+fang_et_al_genotypes <- read.table("https://raw.githubusercontent.com/EEOB-BioData/BCB546-Spring2022/main/assignments/UNIX_Assignment/fang_et_al_genotypes.txt", header = TRUE,)
+snp_position <- read.table("https://raw.githubusercontent.com/EEOB-BioData/BCB546-Spring2022/main/assignments/UNIX_Assignment/snp_position.txt", header = TRUE, sep = "\t")
+```
+To inspect these data files, double click on them in the Environment tab.
+
+- Use the codes below to inspect both the data:
+
+`object.size()` - file size.
+
+`nrow()` - number of rows.
+
+`ncol()` - number of columns.
+
+`head()` - first 6 rows.
+
+`tail()` - last 6 rows.
+
+`dim()` - dimensions by row and column.
+
+`str()` - structure which includes the name, type and preview of data in each column.
+
+`colnames()` - column names.
+
+`sapply(dataframe, class)` - class of each column of data.
+
+- For fang_et_al_genotypes:
+
+``` {r eval=FALSE}
+object.size(fang_et_al_genotypes)
+```
+
+``` {r}
+nrow(fang_et_al_genotypes)
+```
+
+``` {r eval = FALSE}
+ncol(fang_et_al_genotypes)
+
+```
+
+``` {r}
+head(fang_et_al_genotypes)
+```
+
+``` {r}
+tail(fang_et_al_genotypes)
+```
+
+``` {r}
+str(fang_et_al_genotypes)
+```
+
+``` {r}
+colnames(fang_et_al_genotypes)
+```
+
+``` {r}
+dim(fang_et_al_genotypes)
+
+```
+
+``` {r}
+sapply(fang_et_al_genotypes, class)
+```
+
+For snp_position:
+
+``` {r}
+object.size(snp_position)
+```
+
+``` {r}
+nrow(snp_position)
+```
+
+``` {r}
+ncol(snp_position)
+```
+
+``` {r}
+head(snp_position)
+```
+
+``` {r}
+tail(snp_position)
+```
+
+``` {r}
+dim(snp_position)
+```
+
+``` {r}
+str(snp_position)
+```
+
+``` {r}
+colnames(snp_position)
+```
+
+``` {r}
+sapply(snp_position, class)
+```
+
+
+- We need to create two new data frames which are sorted by the species' ID's for both the species from the fang_et_al_genotypes file:
+
+``` {r}
+Maize_ID_Data <- fang_et_al_genotypes[which(fang_et_al_genotypes$Group == "ZMMIL" | fang_et_al_genotypes$Group == "ZMMLR" | fang_et_al_genotypes$Group == "ZMMMR"),]
+Teosinte_ID_Data <- fang_et_al_genotypes[which(fang_et_al_genotypes$Group == "ZMPBA" | fang_et_al_genotypes$Group == "ZMPIL" | fang_et_al_genotypes$Group == "ZMPJA"),]
+```
+
+- After that, we need to get the columns 1,3 and 4 from the snp_position file to combine them into just one.
+
+- To do that:
+
+```{r}
+SNP_Chromosome_Positions <- snp_position[,c(1,3,4)]
+```
+
+- After that, we need to combine our data files in order to organize it so the first column says "SNP_ID", second column says "Chromosome" and the third column says "Position" and then followed by the genotype data. 
+
+- To do that we need to transpose the 'Maize_ID_Data' and the 'Teosinte_ID_Data' andx then combine them.
+
+```{r}
+#intermediate_maize <- Maize_ID_Data[-(1:3)]
+#Transposed_Maize_ID_Data <- t(intermediate_maize) %>% as.data.frame() %>% rownames_to_column(., var = "SNP_ID")
+#view(Transposed_Maize_ID_Data)
+Transposed_Maize_ID_Data <- as.data.frame(t(Maize_ID_Data[,-1]))
+colnames(Transposed_Maize_ID_Data) <- Maize_ID_Data$Sample_ID
+Transposed_Teosinte_ID_Data <- as.data.frame(t(Teosinte_ID_Data[,-1]))
+colnames(Transposed_Teosinte_ID_Data) <- Teosinte_ID_Data$Sample_ID
+```
+
+```{r}
+#I would think its better to name all intermediate files created differently than overwritting them. It helps modify one if need be.
+Transposed_Maize_ID_Data <- cbind(SNP_ID = row.names(Transposed_Maize_ID_Data), Transposed_Maize_ID_Data)
+Transposed_Teosinte_ID_Data <- cbind(SNP_ID = row.names(Transposed_Teosinte_ID_Data), Transposed_Teosinte_ID_Data)
+```
+
+- In order to combine the transposed data frames that we have with the first file SNP_Chromosome_Positions', we should merge the files by the SNP_ID. We need to combine the transposed data frames with the file 'SNP_Chromosome_Positions' which is followed by maize or teosinte.
+
+- To do that:
+
+```{r}
+Maize_Chromosomes <- merge(SNP_Chromosome_Positions,Transposed_Maize_ID_Data, by = "SNP_ID")
+Teosinte_Chromosomes <- merge(SNP_Chromosome_Positions,Transposed_Teosinte_ID_Data, by = "SNP_ID")
+```
+
+```{r}
+Maize_Chromosomes[Maize_Chromosomes=="NA"] <- "?/?"
+Teosinte_Chromosomes[Teosinte_Chromosomes=="NA"] <- "?/?"
+```
+
+- After that, we sort the new files that we got by position by using the 'order()' function.
+
+```{r}
+Maize_Chrom_Ascending <- Maize_Chromosomes[order(suppressWarnings(as.numeric(Maize_Chromosomes$Position))), ]
+Maize_Chrom_Descending <- Maize_Chromosomes[order(suppressWarnings(as.numeric(Maize_Chromosomes$Position, decreasing = T))), ]
+Teosinte_Chrom_Ascending <- Teosinte_Chromosomes[order(suppressWarnings(as.numeric(Teosinte_Chromosomes$Position))), ]
+Teosinte_Chrom_Descending <- Teosinte_Chromosomes[order(suppressWarnings(as.numeric(Teosinte_Chromosomes$Position, decreasing = T))), ]
+```
+
+- Use library to run tidyverse to use the '%>%' function even though I ran it before but for some reason if I do not run it again, it did not work. :/
+
+```{r}
+library(tidyverse)
+```
+
+- Now, we will create a function to make 10 files in one command in which we will have 10 for Maize and Teosinte, in both ascending and descending order:
+
+### I NEED TO FIGURE OUT HOW TO ADD THE (-) FOR MISSING DATA INSTEAD OF THE ?. LEMME KNOW IF YOU KNOW HOW TO DO THAT LOL.
+
+```{r}
+Filter_By_Chromosome <- function(x, df){df %>% filter(Chromosome == x)}
+Maize_Ascending_ByChromosome <- lapply(sort(unique(Maize_Chrom_Ascending$Chromosome)), Filter_By_Chromosome, Maize_Chrom_Ascending)
+invisible(lapply(Maize_Ascending_ByChromosome, function(x) write.csv(x, file = paste0("Maize_Ascending_Chrom", x$Chromosome[1], ".txt"))))
+```
+
+```{r}
+Maize_Descending_ByChromosome <- lapply(sort(unique(Maize_Chrom_Descending$Chromosome)), Filter_By_Chromosome, Maize_Chrom_Descending)
+invisible(lapply(Maize_Descending_ByChromosome, function(x) write.csv(x, file = paste0("Maize_Descending_Chrom", x$Chromosome[1], ".txt"))))
+```
+
+```{r}
+Teosinte_Ascending_ByChromosome <- lapply(sort(unique(Teosinte_Chrom_Ascending$Chromosome)), Filter_By_Chromosome, Teosinte_Chrom_Ascending)
+invisible(lapply(Teosinte_Ascending_ByChromosome,function(x) write.csv(x, file = paste0("Teosinte_Ascending_Chrom", x$Chromosome[1], ".txt"))))
+```
+
+```{r}
+Teosinte_Descending_ByChromosome <- lapply(sort(unique(Teosinte_Chrom_Descending$Chromosome)), Filter_By_Chromosome, Teosinte_Chrom_Descending)
+invisible(lapply(Teosinte_Descending_ByChromosome,function(x) write.csv(x, file = paste0("Teosinte_Descending_Chrom", x$Chromosome[1], ".txt"))))
+```
+
+- PART II: Visualization:
+
+In Part II, we will use ggplot to investigate (by visualization) to look at SNPs per chromosome, missing data and the amount of heterozygosity and then our own visualization.
+
+- ggplot:
+
+We need to transform the data in order to make the position and chromosome numeric.
+
+To do that:
+
+```{r warning=FALSE}
+Maize_Numeric_Chrom <- transform(Maize_Chromosomes, Chromosome =as.numeric(Chromosome), Position=as.numeric(Position))
+view(Maize_Chromosomes)
+Teosinte_Numeric_Chrom <- transform(Teosinte_Chromosomes, Chromosome =as.numeric(Chromosome), Position=as.numeric(Position))
+```
+
+- Now, by using the 'pivot_longer()' function to tidy up the data and merging the pivoted data with the SNP position data to make our table numeric by chromosome, we will be able to plot the number of SNPs on each chromosome from the 'fang_et_al_genotypes'.
+
+```{r}
+fang_et_al_pivot <- fang_et_al_genotypes %>% pivot_longer(!c(Sample_ID, JG_OTU, Group), names_to="SNP_ID", values_to= "NT")
+merged_fang_et_al_pivot <- merge(fang_et_al_pivot, snp_position, by="SNP_ID")
+merged_fang_et_al_pivot_numeric <- merged_fang_et_al_pivot[!is.na(as.numeric(merged_fang_et_al_pivot$Chromosome)),]
+```
+
+- Now we will look at the total number of SNPs per chromosome for our Maize and Teosinte data and drop the NA's for our missing and multiple values:
+To do that:
+
+```{r}
+merged_fang_et_al_pivot_numeric %>% 
+     select(SNP_ID, Chromosome, Position) %>%
+     drop_na() %>% 
+     ggplot()+
+     geom_bar(mapping = aes(as.numeric(Chromosome)), color="blue", fill="blue")+ ggtitle("Number of SNPs per Chromosome for Maize and Teosinte") + labs(x = "Chromosome", y = "Number of SNPs")
+```
+
+- Now, we will be plotting the distribution of SNPs across chromosomes.
+
+```{r warning=FALSE}
+ggplot(data = merged_fang_et_al_pivot_numeric) + geom_bar(mapping = aes(as.numeric(Chromosome), fill=Group)) + scale_x_discrete(limit=c(1:10)) + labs(x = "Chromosome", y="Number of SNPs by Group") + ggtitle("Distribution of SNPs Across Chromosomes Distributed by Group") 
+```
+
+- Now we will be looking at amount of heterozygosity and the missing data. To do that, we will be adding a new column named 'Heterozygosity' to our 'merged_fang_et_al_pivot_numeric' data frame.
+
+```{r}
+merged_fang_et_al_pivot_numeric$Heterozygosity <- "Heterozygous"
+```
+
+- Now we will replace the missing data -> ?/? with 'Missing Data' in the column named Heterozygosity.
+
+```{r}
+merged_fang_et_al_pivot_numeric$Heterozygosity[merged_fang_et_al_pivot_numeric$NT == "?/?"] <- "Missing Data"
+```
+
+- After that, we will be setting up values in such way that in the Heterozygosity column, the values will be changed to 'Homozygous' if they say "A/A", "T/T", "C/C", "G/G".
+
+```{r}
+merged_fang_et_al_pivot_numeric$Heterozygosity[merged_fang_et_al_pivot_numeric$NT %in% c("A/A", "T/T", "C/C", "G/G")] <- "Homozygous"
+```
+
+- Finally, we will now plot our data of the proportion of homozygous vs heterozygous sites, as well as missing data in each sample in each group.
+
+```{r warning=FALSE}
+g <- ggplot(data = merged_fang_et_al_pivot_numeric) + geom_bar(mapping = aes(x = Sample_ID, fill = Heterozygosity), position = "fill") + labs(x = "Sample_ID", y="Proportion") + ggtitle("Proportion of Homozygous and Heterozygous sites (Missing Data Included)")
+g
+```
+
+- Plotting the Position on Chromosomes:
+
+- With the command below, I got the warning message: 
+Warning message:
+Removed 44 rows containing missing values (geom_point).
+
+```{r}
+Maize_Dot_Plot <- ggplot(Maize_Numeric_Chrom, aes(x=Position, y=Chromosome, fill= Chromosome)) + geom_point()
+ggsave("Maize_SNP_Position_Dot_Plot.png", plot = Maize_Dot_Plot)
+```
+
+- Now I will do the same for Teosinte:
+
+- Same warning as before:
+Warning message:
+Removed 44 rows containing missing values (geom_point). 
+```{r}
+Teosinte_Dot_Plot <- ggplot(Teosinte_Numeric_Chrom,  aes(x=Position, y=Chromosome, fill= Chromosome)) + geom_point()
+ggsave("Teosinte_SNP_Position_Dot_Plot.png", plot = Teosinte_Dot_Plot)
+```
+
+- Plotting the Density:
+
+###I AM NOT SURE WHICH ONE IS RIGHT. I AM HAVING ISSUES WITH BOTH COMMANDS DOWN HERE. ANY COMMENTS?
+
+```{r warning=FALSE}
+Maize_Density <- ggplot(Maize_Chromosomes) + geom_density(aes(x=Position, fill = Chromosome))
+ggsave("Maize_SNP_Density_Graph.png", plot = Maize_Density)
+```
+
+```{r}
+Maize_Density <- ggplot(merged_fang_et_al_pivot_numeric) + geom_density(aes(x=Position, fill = Chromosome))
+ggsave("Maize_SNP_Density_Graph.png", plot = Maize_Density)
+```
+
+With the command below, I got the warning message: 
+Warning message:
+Removed 44 rows containing non-finite values (stat_density). (Not sure how to deal with that).
+
+```{r}
+Maize_Density_Final <- ggplot(Maize_Numeric_Chrom) + geom_density(aes(x=Position, fill = Chromosome))
+ggsave("Maize_SNP_Density_Graph_Final.png", plot = Maize_Density_Final)
+```
+
+Got the same warning for this one:
+Warning message:
+Removed 44 rows containing non-finite values (stat_density).
+
+```{r}
+Teosinte_Density <- ggplot(Teosinte_Numeric_Chrom) + geom_density(aes(x=Position, fill = Chromosome))
+ggsave("Teosinte_SNP_Density_Graph.png", plot = Teosinte_Density)
+```
+
+Again, got the same warnings: I believe the command below provides us with the best/the most informative graph for Maize (and later Teosinte).
+
+```{r}
+Maize_Density_Last_Try <- ggplot(Maize_Numeric_Chrom) + geom_density(aes(x=Position, fill = Chromosome)) + facet_wrap(~Chromosome)
+ggsave("Maize_SNP_Density_Last_Try.png", plot = Maize_Density_Last_Try)
+```
+
+Now, I will be running the same command for the Teosinte (sadly, with the warning).
+
+```{r}
+Teosinte_Density_Final <- ggplot(Teosinte_Numeric_Chrom) + geom_density(aes(x=Position, fill = Chromosome)) + facet_wrap(~Chromosome)
+ggsave("Teosinte_SNP_Density_Final.png", plot = Teosinte_Density_Final)
+```
+
+- My Own Visualization:
+
+- To observe the total number of SNPs per Chromosome, I ran the code below using ggplot.
+
+```{r}
+ggplot(merged_fang_et_al_pivot_numeric) + geom_bar(mapping=aes(x = Chromosome, fill=Heterozygosity), position="dodge") + labs(x = "Chromosome", y="Number of SNPs") + ggtitle("Amount of Homozygous and Heterozygous Samples with the Missing Data")
+```
+
+- With: position = "dodge", we can see the bars right next to each other so they do not overlap. I am not sure why but the chromosome number's order does not make sense at all! It goes 1, 10, 2, 3, 4, 5, 6, 7, 8, 9 for most of these and I am not sure how to fix that. :(
+
+I'll do rest later please cool ok thanks bye. :)
