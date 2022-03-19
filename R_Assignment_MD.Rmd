@@ -48,8 +48,8 @@ dim(genotypes) #gives the dimensions of the file
 dim(fang)
 dim(SNPs)
 #after knowing that the files are not too big, i viewed them
-view(fang)
-view(SNPs)
+View(fang)
+View(SNPs)
 class(SNPs)
 class(fang)
 ```
