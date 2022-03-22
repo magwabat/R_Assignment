@@ -191,6 +191,7 @@ view(maize_and_SNP)
 Me_on_it <- ggplot(filter(maize_and_SNP, Sequence != "A/A") , aes(x = Sample_ID, fill = Sequence)) + 
   geom_bar(position = "fill") + theme_bw() + labs(x = "Sample_ID", y = "Proportion")
 ```
+#gujhjhjdf
 #Visualization on a PDF
 ```{r}
 pdf("Me_On_it.pdf")
